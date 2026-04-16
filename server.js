@@ -1,27 +1,11 @@
-const express = require("express");
-const Stripe = require("stripe");
-const cors = require("cors");
-require("dotenv").config();
-
-const app = express();
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-
-app.use(cors());
-app.use(express.json());
-
-// Health check
-app.get("/", (req, res) => {
-  res.send("Harmora backend running");
-});
-
-// Create Stripe checkout session
 app.post("/create-checkout-session", async (req, res) => {
-  const { product } = req.body;
-
   try {
+    const { product } = req.body;
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
+
       line_items: [
         {
           price_data: {
@@ -34,15 +18,24 @@ app.post("/create-checkout-session", async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: "https://YOUR-VERCEL-SITE.vercel.app/success.html",
-      cancel_url: "https://YOUR-VERCEL-SITE.vercel.app",
+
+      // 💸 THIS IS YOUR CUT SYSTEM
+      payment_intent_data: {
+        application_fee_amount: Math.floor(product.price * 100 * 0.20), // 20% Harmora cut
+      },
+
+      // ⚠️ for now (no connected accounts yet)
+      // later we add:
+      // transfer_data: { destination: "ARTIST_STRIPE_ACCOUNT_ID" }
+
+      success_url: `${process.env.FRONTEND_URL}`,
+      cancel_url: `${process.env.FRONTEND_URL}`,
     });
 
     res.json({ url: session.url });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: "Checkout failed" });
   }
 });
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Harmora backend running on port " + PORT));
