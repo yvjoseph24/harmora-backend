@@ -1,0 +1,17 @@
+create table artists (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid,
+  artist_name text,
+  bio text
+);
+
+create table songs (
+  id uuid primary key default gen_random_uuid(),
+  artist_id uuid,
+  title text,
+  price int,
+  audio_url text
+);
+
+alter table artists enable row level security;
+alter table songs enable row level security;
